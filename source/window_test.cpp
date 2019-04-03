@@ -60,6 +60,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	HDC hdc; //stores the device context of this window handle
 	RECT cliRect;
 
+	static int brush_size = 20;
+	int brush_half_size = brush_size / 2;
+	int zDelta;
+
 	switch (msg)
 	{
 	case WM_ACTIVATE:
@@ -73,13 +77,48 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		PostQuitMessage(0);
 		break;
 	case WM_MOUSEMOVE:
-		UpdateWindow(hwnd);
+		if (wParam & MK_LBUTTON)
+		{
+			//left click is down
+			InvalidateRect(hwnd, NULL, FALSE);
+		}
+		else
+		{
+			//left click is up
+			InvalidateRect(hwnd, NULL, TRUE);
+		}
+		
+		//UpdateWindow(hwnd);
 
+		break;
+	case WM_MOUSEWHEEL:
+		zDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+
+		if (zDelta >= 0)
+		{
+			++brush_size;
+		}
+		else
+		{
+			brush_size == 5 ? brush_size : --brush_size;
+		}
+
+		InvalidateRect(hwnd, NULL, TRUE);
+
+		break;
+	case WM_LBUTTONUP:
+		//MessageBox(hwnd,TEXT("Left Click Up"),TEXT("Information"),MB_ICONINFORMATION | MB_OK);
+		InvalidateRect(hwnd, NULL, TRUE);
+
+		break;
+
+	case WM_LBUTTONDOWN:
+		InvalidateRect(hwnd, NULL, FALSE);
+
+		break;
 	case WM_PAINT:
 		{
 		GetClientRect(hwnd, &cliRect);
-		//Causes the whole client area to be updated and redraws the background
-		InvalidateRect(hwnd, NULL, TRUE);
 
 		hdc = BeginPaint(hwnd, &ps);
 		
@@ -90,8 +129,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				if (ScreenToClient(hwnd, &curPos))
 				{
-					//draw_ellipse(hdc, &cliRect);
-					draw_ellipse(hdc, curPos.x-10, curPos.y-10, 20);
+					draw_ellipse(hdc, curPos.x - brush_half_size, curPos.y - brush_half_size, brush_size);
 				}
 			}
 
@@ -121,7 +159,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	HWND hwnd;
 	MSG Msg;
 
-	//show_mouse_pointer(false);
+	show_mouse_pointer(false);
 
 	//Step 1: Registering the Window Class
 	wc.cbSize = sizeof(WNDCLASSEX);
@@ -162,6 +200,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
+
+	//Causes the whole client area to be updated and redraws the background
+	InvalidateRect(hwnd, NULL, TRUE);
 
 	// Step 3: The Message Loop
 	while (GetMessage(&Msg, NULL, 0, 0) > 0)
